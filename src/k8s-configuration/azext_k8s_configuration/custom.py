@@ -94,7 +94,7 @@ def create_k8s_configuration(cmd, client, resource_group_name, cluster_name, nam
                               https_auth_set=https_auth_set)
 
     # Validate that the subscription is registered to Microsoft.KubernetesConfiguration
-    _validate_cc_registration(cmd.cli_ctx)
+    _validate_cc_registration(cmd)
 
     # Create sourceControlConfiguration object
     source_control_configuration = SourceControlConfiguration(repository_url=repository_url,
