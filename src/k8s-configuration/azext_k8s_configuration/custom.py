@@ -3,12 +3,13 @@
 # Licensed under the MIT License. See License.txt in the project root for license information.
 # --------------------------------------------------------------------------------------------
 
-from azure.cli.core.azclierror import ResourceNotFoundError, CommandNotFoundError
+from azure.cli.core.azclierror import ResourceNotFoundError, CommandNotFoundError, \
+    RequiredArgumentMissingError
 from knack.log import get_logger
-from azext_k8s_configuration._utils import _get_protected_settings, _get_cluster_type, \
-    _fix_compliance_state, _get_data_from_key_or_file
+from azext_k8s_configuration._utils import _get_cluster_type, \
+    _fix_compliance_state, _get_data_from_key_or_file, _to_base64
 from azext_k8s_configuration._validators import _validate_known_hosts, _validate_url_with_params, \
-    _validate_configuration_name, _validate_cc_registration
+    _validate_configuration_name, _validate_cc_registration, _validate_private_key
 
 from azext_k8s_configuration.vendored_sdks.models import SourceControlConfiguration
 from azext_k8s_configuration.vendored_sdks.models import HelmOperatorProperties
@@ -200,3 +201,29 @@ def delete_k8s_configuration(client, resource_group_name, cluster_name, name, cl
     source_control_configuration_name = name
 
     return client.delete(resource_group_name, cluster_rp, cluster_type, cluster_name, source_control_configuration_name)
+
+
+def _get_protected_settings(ssh_private_key, ssh_private_key_file, https_user, https_key):
+    protected_settings = {}
+    ssh_private_key_data = _get_data_from_key_or_file(ssh_private_key, ssh_private_key_file)
+
+    # Add gitops private key data to protected settings if exists
+    # Dry-run all key types to determine if the private key is in a valid format
+    if ssh_private_key_data != '':
+        _validate_private_key(ssh_private_key_data)
+        protected_settings["sshPrivateKey"] = ssh_private_key_data
+
+    # Check if both httpsUser and httpsKey exist, then add to protected settings
+    if https_user != '' and https_key != '':
+        protected_settings['httpsUser'] = _to_base64(https_user)
+        protected_settings['httpsKey'] = _to_base64(https_key)
+    elif https_user != '':
+        raise RequiredArgumentMissingError(
+            'Error! --https-user used without --https-key',
+            'Try providing both --https-user and --https-key together')
+    elif https_key != '':
+        raise RequiredArgumentMissingError(
+            'Error! --http-key used without --http-user',
+            'Try providing both --https-user and --https-key together')
+
+    return protected_settings

@@ -4,36 +4,7 @@
 # --------------------------------------------------------------------------------------------
 
 import base64
-from azure.cli.core.azclierror import InvalidArgumentValueError, \
-    RequiredArgumentMissingError, MutuallyExclusiveArgumentError
-
-from ._validators import _validate_private_key
-
-
-def _get_protected_settings(ssh_private_key, ssh_private_key_file, https_user, https_key):
-    protected_settings = {}
-    ssh_private_key_data = _get_data_from_key_or_file(ssh_private_key, ssh_private_key_file)
-
-    # Add gitops private key data to protected settings if exists
-    # Dry-run all key types to determine if the private key is in a valid format
-    if ssh_private_key_data != '':
-        _validate_private_key(ssh_private_key_data)
-        protected_settings["sshPrivateKey"] = ssh_private_key_data
-
-    # Check if both httpsUser and httpsKey exist, then add to protected settings
-    if https_user != '' and https_key != '':
-        protected_settings['httpsUser'] = _to_base64(https_user)
-        protected_settings['httpsKey'] = _to_base64(https_key)
-    elif https_user != '':
-        raise RequiredArgumentMissingError(
-            'Error! --https-user used without --https-key',
-            'Try providing both --https-user and --https-key together')
-    elif https_key != '':
-        raise RequiredArgumentMissingError(
-            'Error! --http-key used without --http-user',
-            'Try providing both --https-user and --https-key together')
-
-    return protected_settings
+from azure.cli.core.azclierror import MutuallyExclusiveArgumentError, InvalidArgumentValueError
 
 
 def _get_cluster_type(cluster_type):
