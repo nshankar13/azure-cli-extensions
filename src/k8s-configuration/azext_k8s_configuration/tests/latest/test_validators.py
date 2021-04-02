@@ -6,7 +6,7 @@
 import unittest
 import base64
 from azure.cli.core.azclierror import InvalidArgumentValueError, MutuallyExclusiveArgumentError
-from azext_k8s_configuration._utils import _get_protected_settings
+from azext_k8s_configuration.custom import _get_protected_settings
 import azext_k8s_configuration._validators as validators
 from Crypto.PublicKey import RSA, ECC, DSA
 from paramiko.ed25519key import Ed25519Key
@@ -15,7 +15,7 @@ from paramiko.ed25519key import Ed25519Key
 class TestValidateKeyTypes(unittest.TestCase):
     def test_bad_private_key(self):
         private_key_encoded = base64.b64encode("this is not a valid private key".encode('utf-8')).decode('utf-8')
-        err = "Error! ssh private key provided in invalid format"
+        err = "Error! --ssh-private-key provided in invalid format"
         with self.assertRaises(InvalidArgumentValueError) as cm:
             _get_protected_settings(private_key_encoded, '', '', '')
         self.assertEqual(str(cm.exception), err)
@@ -123,13 +123,13 @@ class TestValidateURLWithParams(unittest.TestCase):
         validators._validate_url_with_params('https://github.com/jonathan-innis/helm-operator-get-started-private.git', False, False, True)
 
     def test_ssh_private_key_with_https_url(self):
-        err = 'Error! An ssh private key cannot be used with an http(s) url'
+        err = 'Error! An --ssh-private-key cannot be used with an http(s) url'
         with self.assertRaises(MutuallyExclusiveArgumentError) as cm:
             validators._validate_url_with_params('https://github.com/jonathan-innis/helm-operator-get-started-private.git', True, False, False)
         self.assertEqual(str(cm.exception), err)
 
     def test_ssh_known_hosts_with_https_url(self):
-        err = 'Error! ssh known_hosts cannot be used with an http(s) url'
+        err = 'Error! --ssh-known-hosts cannot be used with an http(s) url'
         with self.assertRaises(MutuallyExclusiveArgumentError) as cm:
             validators._validate_url_with_params('https://github.com/jonathan-innis/helm-operator-get-started-private.git', False, True, False)
         self.assertEqual(str(cm.exception), err)
