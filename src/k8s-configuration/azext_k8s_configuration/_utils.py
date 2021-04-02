@@ -3,14 +3,11 @@
 # Licensed under the MIT License. See License.txt in the project root for license information.
 # --------------------------------------------------------------------------------------------
 
-import io
 import base64
 from azure.cli.core.azclierror import InvalidArgumentValueError, \
     RequiredArgumentMissingError, MutuallyExclusiveArgumentError
 
-from paramiko.ed25519key import Ed25519Key
-from paramiko.ssh_exception import SSHException
-from Crypto.PublicKey import RSA, ECC, DSA
+from ._validators import _validate_private_key
 
 
 def _get_protected_settings(ssh_private_key, ssh_private_key_file, https_user, https_key):
@@ -19,30 +16,8 @@ def _get_protected_settings(ssh_private_key, ssh_private_key_file, https_user, h
 
     # Add gitops private key data to protected settings if exists
     # Dry-run all key types to determine if the private key is in a valid format
-    invalid_rsa_key, invalid_ecc_key, invalid_dsa_key, invalid_ed25519_key = (False, False, False, False)
     if ssh_private_key_data != '':
-        try:
-            RSA.import_key(_from_base64(ssh_private_key_data))
-        except ValueError:
-            invalid_rsa_key = True
-        try:
-            ECC.import_key(_from_base64(ssh_private_key_data))
-        except ValueError:
-            invalid_ecc_key = True
-        try:
-            DSA.import_key(_from_base64(ssh_private_key_data))
-        except ValueError:
-            invalid_dsa_key = True
-        try:
-            key_obj = io.StringIO(_from_base64(ssh_private_key_data).decode('utf-8'))
-            Ed25519Key(file_obj=key_obj)
-        except SSHException:
-            invalid_ed25519_key = True
-
-        if invalid_rsa_key and invalid_ecc_key and invalid_dsa_key and invalid_ed25519_key:
-            raise InvalidArgumentValueError(
-                'Error! ssh private key provided in invalid format',
-                'Verify the key provided is a valid PEM-formatted key of type RSA, ECC, DSA, or Ed25519')
+        _validate_private_key(ssh_private_key_data)
         protected_settings["sshPrivateKey"] = ssh_private_key_data
 
     # Check if both httpsUser and httpsKey exist, then add to protected settings

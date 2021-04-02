@@ -4,6 +4,7 @@
 # --------------------------------------------------------------------------------------------
 
 import re
+import io
 from azure.cli.core.azclierror import InvalidArgumentValueError, MutuallyExclusiveArgumentError
 
 from knack.log import get_logger
@@ -12,6 +13,9 @@ from azext_k8s_configuration._utils import _from_base64
 import azext_k8s_configuration._consts as consts
 from urllib.parse import urlparse
 from paramiko.hostkeys import HostKeyEntry
+from paramiko.ed25519key import Ed25519Key
+from paramiko.ssh_exception import SSHException
+from Crypto.PublicKey import RSA, ECC, DSA
 
 
 logger = get_logger(__name__)
@@ -62,11 +66,11 @@ def _validate_url_with_params(repository_url, ssh_private_key_set, known_hosts_c
     if scheme in ('http', 'https'):
         if ssh_private_key_set:
             raise MutuallyExclusiveArgumentError(
-                'Error! An ssh private key cannot be used with an http(s) url',
+                'Error! An --ssh-private-key cannot be used with an http(s) url',
                 'Verify the url provided is a valid ssh url and not an http(s) url')
         if known_hosts_contents_set:
             raise MutuallyExclusiveArgumentError(
-                'Error! ssh known_hosts cannot be used with an http(s) url',
+                'Error! --ssh-known-hosts cannot be used with an http(s) url',
                 'Verify the url provided is a valid ssh url and not an http(s) url')
         if not https_auth_set and scheme == 'https':
             logger.warning('Warning! https url is being used without https auth params, ensure the repository '
@@ -99,6 +103,32 @@ def _validate_known_hosts(knownhost_data):
             raise InvalidArgumentValueError(
                 'Error! ssh known_hosts provided in wrong format',
                 'Verify that all lines in the known_hosts contents are provided in a valid sshd(8) format') from ex
+
+
+def _validate_private_key(ssh_private_key_data):
+    invalid_rsa_key, invalid_ecc_key, invalid_dsa_key, invalid_ed25519_key = (False, False, False, False)
+    try:
+        RSA.import_key(_from_base64(ssh_private_key_data))
+    except ValueError:
+        invalid_rsa_key = True
+        try:
+            ECC.import_key(_from_base64(ssh_private_key_data))
+        except ValueError:
+            invalid_ecc_key = True
+            try:
+                DSA.import_key(_from_base64(ssh_private_key_data))
+            except ValueError:
+                invalid_dsa_key = True
+                try:
+                    key_obj = io.StringIO(_from_base64(ssh_private_key_data).decode('utf-8'))
+                    Ed25519Key(file_obj=key_obj)
+                except SSHException:
+                    invalid_ed25519_key = True
+
+    if invalid_rsa_key and invalid_ecc_key and invalid_dsa_key and invalid_ed25519_key:
+        raise InvalidArgumentValueError(
+            'Error! --ssh-private-key provided in invalid format',
+            'Verify the key provided is a valid PEM-formatted key of type RSA, ECC, DSA, or Ed25519')
 
 
 # pylint: disable=broad-except
