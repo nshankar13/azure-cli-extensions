@@ -140,7 +140,7 @@ def _validate_cc_registration(cmd):
         if registration_state != "Registered":
             logger.warning("'Source Control Configuration' cannot be used because '%s' provider has not been "
                            "registered. More details for registering this provider can be found here - "
-                           "https://aka.ms/EnableCustomLocations", consts.PROVIDER_NAMESPACE)
+                           "https://aka.ms/RegisterKubernetesConfigurationProvider", consts.PROVIDER_NAMESPACE)
     except Exception:
         logger.warning("Unable to fetch registration state of '%s' provider. "
                        "Failed to enable 'source control configuration' feature...", consts.PROVIDER_NAMESPACE)
