@@ -10,6 +10,11 @@
     "URL": "https://docs.microsoft.com/archive/msdn-magazine/2017/connect/artificial-intelligence-getting-started-with-microsoft-ai"
   },
   {
+    "Command": "az aks",
+    "AzureServiceName": "Azure Kubernetes Service",
+    "URL": "https://docs.microsoft.com/azure/aks/"
+  },
+  {
     "Command": "az alias",
     "AzureServiceName": "Azure CLI",
     "URL": ""
@@ -43,6 +48,11 @@
     "Command": "az cli-translator",
     "AzureServiceName": "Azure CLI",
     "URL": ""
+  },
+  {
+    "Command": "az cloud-service",
+    "AzureServiceName": "Azure Cloud Services (extended support)",
+    "URL": "https://docs.microsoft.com/azure/cloud-services-extended-support/"
   },
   {
     "Command": "az codespace",
@@ -131,7 +141,7 @@
   },
   {
     "Command": "az graph",
-    "AzureServiceName": "Azure Graph",
+    "AzureServiceName": "Azure Resource Graph",
     "URL": "https://docs.microsoft.com/azure/governance/resource-graph/overview"
   },
   {
