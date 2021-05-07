@@ -4,3 +4,4 @@
 # --------------------------------------------------------------------------------------------
 
 PROVIDER_NAMESPACE = 'Microsoft.KubernetesConfiguration'
+REGISTERED = "Registered"

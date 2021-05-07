@@ -63,7 +63,7 @@ def _validate_k8s_name(param_value, param_name, max_len):
 def _validate_url_with_params(repository_url, ssh_private_key_set, known_hosts_contents_set, https_auth_set):
     scheme = urlparse(repository_url).scheme
 
-    if scheme in ('http', 'https'):
+    if scheme.lower() in ('http', 'https'):
         if ssh_private_key_set:
             raise MutuallyExclusiveArgumentError(
                 'Error! An --ssh-private-key cannot be used with an http(s) url',
@@ -106,29 +106,26 @@ def _validate_known_hosts(knownhost_data):
 
 
 def _validate_private_key(ssh_private_key_data):
-    invalid_rsa_key, invalid_ecc_key, invalid_dsa_key, invalid_ed25519_key = (False, False, False, False)
     try:
         RSA.import_key(_from_base64(ssh_private_key_data))
+        return
     except ValueError:
-        invalid_rsa_key = True
         try:
             ECC.import_key(_from_base64(ssh_private_key_data))
+            return
         except ValueError:
-            invalid_ecc_key = True
             try:
                 DSA.import_key(_from_base64(ssh_private_key_data))
+                return
             except ValueError:
-                invalid_dsa_key = True
                 try:
                     key_obj = io.StringIO(_from_base64(ssh_private_key_data).decode('utf-8'))
                     Ed25519Key(file_obj=key_obj)
+                    return
                 except SSHException:
-                    invalid_ed25519_key = True
-
-    if invalid_rsa_key and invalid_ecc_key and invalid_dsa_key and invalid_ed25519_key:
-        raise InvalidArgumentValueError(
-            'Error! --ssh-private-key provided in invalid format',
-            'Verify the key provided is a valid PEM-formatted key of type RSA, ECC, DSA, or Ed25519')
+                    raise InvalidArgumentValueError(
+                        'Error! --ssh-private-key provided in invalid format',
+                        'Verify the key provided is a valid PEM-formatted key of type RSA, ECC, DSA, or Ed25519')
 
 
 # pylint: disable=broad-except
@@ -137,7 +134,7 @@ def _validate_cc_registration(cmd):
         rp_client = _resource_providers_client(cmd.cli_ctx)
         registration_state = rp_client.get(consts.PROVIDER_NAMESPACE).registration_state
 
-        if registration_state != "Registered":
+        if registration_state.lower() != consts.REGISTERED.lower():
             logger.warning("'Source Control Configuration' cannot be used because '%s' provider has not been "
                            "registered. More details for registering this provider can be found here - "
                            "https://aka.ms/RegisterKubernetesConfigurationProvider", consts.PROVIDER_NAMESPACE)
